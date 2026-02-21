@@ -117,7 +117,7 @@ function SectionHero({ onCTAClick }) {
           </button>
 
           <a
-            href="https://instagram.com/YOUR_INSTAGRAM_USERNAME"
+            href="https://instagram.com/launchpad.founders"
             target="_blank"
             rel="noreferrer"
             style={{
@@ -468,6 +468,7 @@ function SectionSignup() {
 
   const [touched, setTouched] = useState({});
   const [submitted, setSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   function validate(f) {
     const e = {};
@@ -516,7 +517,7 @@ function SectionSignup() {
     setTouched((t) => ({ ...t, [e.target.name]: true }));
   }
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
 
     const allTouched = {
@@ -536,9 +537,36 @@ function SectionSignup() {
     setTouched(allTouched);
 
     const currentErrors = validate(form);
-    if (Object.keys(currentErrors).length === 0) {
-      setSubmitted(true);
-      console.log("Form submitted:", form); // mock submit
+    if (Object.keys(currentErrors).length !== 0) return;
+
+    try {
+      setIsSubmitting(true);
+
+      // Google Apps Script endpoint (your current setup)
+      const payload = new FormData();
+      payload.append("data", JSON.stringify(form));
+      
+      const response = await fetch(
+        "https://script.google.com/macros/s/AKfycbz_FRjG0ynobIDaqhemB-JyFIIvkGM0cZu1S56l7gMItQBrdx3ZgwmC37j_YL1ausrmFQ/exec",
+        {
+          method: "POST",
+          body: payload,
+        }
+      );
+      
+      const result = await response.json();
+
+      if (result.success) {
+        setSubmitted(true);
+      } else {
+        console.error("Submission failed:", result);
+        alert(`Submission failed: ${result.error || "Unknown error"}`);
+      }
+    } catch (err) {
+      console.error("Network error:", err);
+      alert("Network error. Please try again.");
+    } finally {
+      setIsSubmitting(false);
     }
   }
 
@@ -950,6 +978,7 @@ function SectionSignup() {
 
             <button
               type="submit"
+              disabled={isSubmitting}
               style={{
                 background: COLORS.neon,
                 color: COLORS.darkText,
@@ -959,11 +988,12 @@ function SectionSignup() {
                 fontFamily: FONT.family,
                 fontWeight: 800,
                 fontSize: "1rem",
-                cursor: "pointer",
+                cursor: isSubmitting ? "not-allowed" : "pointer",
                 minWidth: 170,
+                opacity: isSubmitting ? 0.75 : 1,
               }}
             >
-              Apply to Join
+              {isSubmitting ? "Submitting..." : "Apply to Join"}
             </button>
           </div>
         </form>
